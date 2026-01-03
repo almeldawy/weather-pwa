@@ -5,22 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Weather Premium</title>
 
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+
 <!-- Manifest PWA -->
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#38bdf8">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 
 <style>
-/* THEMES */
+/* 🌈 VARIABLES & THEMES */
 :root {
   --bg: linear-gradient(135deg, #bae6fd, #ffffff);
-  --card: rgba(255,255,255,0.75);
+  --card: rgba(255,255,255,0.25);
   --text: #0f172a;
+  --accent: #fbbf24;
 }
 body.dark {
-  --bg: linear-gradient(135deg, #020617, #0f172a);
-  --card: rgba(15,23,42,0.75);
+  --bg: linear-gradient(135deg, #0f172a, #020617);
+  --card: rgba(15,23,42,0.4);
   --text: #f8fafc;
+  --accent: #facc15;
 }
 body.sunny { --bg: linear-gradient(135deg,#fde68a,#fef3c7); }
 body.rainy { --bg: linear-gradient(135deg,#94a3b8,#e2e8f0); }
@@ -28,22 +33,26 @@ body.snowy { --bg: linear-gradient(135deg,#e0f2fe,#f8fafc); }
 body.cloudy { --bg: linear-gradient(135deg,#cbd5e1,#f1f5f9); }
 
 /* GLOBAL STYLES */
-* { box-sizing: border-box; font-family: system-ui, -apple-system; }
+* { box-sizing: border-box; font-family: 'Poppins', sans-serif; }
 body { margin:0; min-height:100vh; background: var(--bg); color: var(--text);
       display:flex; justify-content:center; align-items:center; transition: background 0.8s;}
-.app { width:100%; max-width:420px; padding:20px; }
-header { display:flex; justify-content:space-between; align-items:center; }
-button { border:none; background: var(--card); backdrop-filter:blur(14px);
-         border-radius:14px; padding:10px 14px; font-size:18px; cursor:pointer; }
-.card { margin-top:24px; padding:30px; border-radius:26px;
-        background: var(--card); backdrop-filter: blur(18px);
-        box-shadow:0 30px 60px rgba(0,0,0,0.15); text-align:center; }
-.temp { font-size:64px; font-weight:700; }
-.icon { font-size:48px; animation: float 3s ease-in-out infinite; }
-@keyframes float { 0%,100%{transform:translateY(0);} 50%{transform:translateY(-6px);} }
-.forecast { display:flex; justify-content:space-between; margin-top:20px; font-size:14px; }
-.daily { margin-top:20px; text-align:center; font-size:14px; }
-.daily div { margin-bottom:6px; }
+.app { width:100%; max-width:440px; padding:20px; }
+header { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; }
+button { border:none; background: var(--card); backdrop-filter:blur(12px);
+         border-radius:14px; padding:10px 14px; font-size:18px; cursor:pointer; transition: transform 0.2s; }
+button:hover { transform: scale(1.05); }
+.card { padding:30px; border-radius:28px; background: var(--card); backdrop-filter: blur(18px);
+        box-shadow:0 20px 50px rgba(0,0,0,0.15); text-align:center; transition: all 0.5s;}
+.temp { font-size:70px; font-weight:700; margin:10px 0; }
+.icon { font-size:60px; animation: float 3s ease-in-out infinite; }
+@keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.forecast { display:flex; justify-content:space-between; margin-top:20px; font-size:14px; overflow-x:auto; padding-bottom:10px; }
+.forecast div { background: rgba(255,255,255,0.1); padding:8px 12px; border-radius:12px; margin-right:8px; min-width:55px; text-align:center; }
+.daily { margin-top:20px; text-align:center; font-size:14px; display:flex; flex-direction:column; }
+.daily div { margin-bottom:6px; display:flex; justify-content:space-between; padding:6px 12px; border-radius:12px; background: rgba(255,255,255,0.15);}
+.daily div span { font-weight:600; }
+::-webkit-scrollbar { height:6px; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius:3px; }
 </style>
 </head>
 
@@ -122,7 +131,7 @@ navigator.geolocation.getCurrentPosition(async pos=>{
   const mins=data.daily.temperature_2m_min.slice(0,7);
   document.getElementById('daily').innerHTML=days.map((c,i)=>{
     const [ic,desc]=codes[c]||["❔","Inconnu"];
-    return `<div>${ic} ${desc}: ${Math.round(maxs[i])}° / ${Math.round(mins[i])}°</div>`;
+    return `<div><span>${ic} ${desc}</span> <span>${Math.round(maxs[i])}°/${Math.round(mins[i])}°</span></div>`;
   }).join("");
 });
 
@@ -131,3 +140,4 @@ if('serviceWorker' in navigator){navigator.serviceWorker.register('service-worke
 </script>
 </body>
 </html>
+
