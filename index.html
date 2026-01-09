@@ -11,12 +11,11 @@
     <link rel="icon" type="image/png" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-    <!-- Google Fonts: Poppins pour la modernité et Inter pour la clarté -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            /* Palette de couleurs "Premium" - Douce et moderne */
             --primary: #6366f1;
             --bg-gradient: linear-gradient(135deg, #e0e7ff 0%, #ede9fe 100%);
             --glass-bg: rgba(255, 255, 255, 0.4);
@@ -24,6 +23,7 @@
             --text-main: #1e293b;
             --text-muted: #64748b;
             --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
+            --scrollbar-thumb: #c7d2fe;
         }
 
         body.dark {
@@ -33,6 +33,7 @@
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
             --shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+            --scrollbar-thumb: #334155;
         }
 
         * {
@@ -54,7 +55,6 @@
             overflow-x: hidden;
         }
 
-        /* Arrière-plan animé (le canvas) */
         #weatherCanvas {
             position: fixed;
             top: 0;
@@ -66,7 +66,7 @@
         }
 
         .app-container {
-            width: 90%;
+            width: 95%;
             max-width: 400px;
             padding: 20px;
             animation: fadeIn 1s ease-out;
@@ -89,14 +89,12 @@
             font-size: 1.5rem;
             font-weight: 800;
             letter-spacing: -0.5px;
-            line-height: 1.2;
         }
 
         .date-time {
             font-size: 0.85rem;
             color: var(--text-muted);
             margin-top: 4px;
-            font-weight: 400;
         }
 
         .theme-toggle {
@@ -111,26 +109,19 @@
             font-size: 1.2rem;
         }
 
-        .theme-toggle:hover {
-            transform: rotate(15deg) scale(1.1);
-        }
-
-        /* La Carte Météo Principale */
         .main-card {
             background: var(--glass-bg);
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             border: 1px solid var(--glass-border);
             border-radius: 32px;
-            padding: 40px 30px;
+            padding: 30px 20px;
             text-align: center;
             box-shadow: var(--shadow);
-            position: relative;
         }
 
-        /* Style de l'alerte vent */
         .wind-alert {
-            display: none; /* Masqué par défaut */
+            display: none;
             background: rgba(239, 68, 68, 0.15);
             color: #ef4444;
             border: 1px solid rgba(239, 68, 68, 0.3);
@@ -149,10 +140,8 @@
         }
 
         .weather-icon {
-            font-size: 100px;
+            font-size: 80px;
             margin-bottom: 10px;
-            filter: drop-shadow(0 10px 15px rgba(0,0,0,0.1));
-            display: inline-block;
             animation: float 4s ease-in-out infinite;
         }
 
@@ -163,7 +152,7 @@
 
         .temperature {
             font-family: 'Poppins', sans-serif;
-            font-size: 80px;
+            font-size: 70px;
             font-weight: 700;
             line-height: 1;
             margin: 10px 0;
@@ -173,24 +162,45 @@
         }
 
         .description {
-            font-size: 1.1rem;
+            font-size: 1rem;
             color: var(--text-muted);
             text-transform: capitalize;
-            font-weight: 400;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
 
-        /* Prévisions Horaires */
+        /* 1/ BARRE DE DÉFILEMENT ÉLÉGANTE */
         .forecast-container {
             display: flex;
             gap: 15px;
             overflow-x: auto;
-            padding: 10px 5px;
-            scrollbar-width: none; /* Firefox */
+            padding: 10px 5px 20px 5px;
+            cursor: grab; /* Indique qu'on peut cliquer et glisser */
+            user-select: none; /* Évite de sélectionner le texte pendant le glissement */
         }
 
+        /* Style de la barre pour Chrome, Edge, Safari */
         .forecast-container::-webkit-scrollbar {
-            display: none; /* Chrome/Safari */
+            height: 6px; /* Barre fine */
+        }
+
+        .forecast-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+        }
+
+        .forecast-container::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 10px;
+        }
+
+        /* Style pour Firefox */
+        .forecast-container {
+            scrollbar-width: thin;
+            scrollbar-color: var(--scrollbar-thumb) rgba(0, 0, 0, 0.05);
+        }
+
+        .forecast-container:active {
+            cursor: grabbing; /* Curseur poing fermé quand on clique */
         }
 
         .forecast-item {
@@ -198,14 +208,10 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             padding: 15px 10px;
             border-radius: 20px;
-            min-width: 65px;
+            min-width: 70px;
             text-align: center;
             transition: 0.3s;
-        }
-
-        .forecast-item:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-5px);
+            pointer-events: none; /* Permet au clic-glisser de mieux fonctionner sur le parent */
         }
 
         .forecast-time {
@@ -220,7 +226,6 @@
             font-size: 1rem;
         }
 
-        /* Petit badge "Aujourd'hui" */
         .badge {
             background: var(--primary);
             color: white;
@@ -251,7 +256,6 @@
         <main class="main-card">
             <span class="badge">Aujourd'hui</span>
             
-            <!-- Zone d'alerte vent -->
             <div id="windAlert" class="wind-alert">
                 ⚠️ Alerte : Vent fort (<span id="windVal">0</span> km/h)
             </div>
@@ -267,23 +271,43 @@
     </div>
 
     <script>
-        // Enregistrement du Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('service-worker.js')
-                    .then(reg => console.log('Service Worker enregistré !'))
-                    .catch(err => console.log('Erreur SW:', err));
-            });
-        }
+        // 2/ FONCTION CLIQUER-GLISSER (DRAG-TO-SCROLL)
+        const slider = document.getElementById('forecast');
+        let isDown = false;
+        let startX;
+        let scrollLeft;
 
+        slider.addEventListener('mousedown', (e) => {
+            isDown = true;
+            slider.classList.add('active');
+            startX = e.pageX - slider.offsetLeft;
+            scrollLeft = slider.scrollLeft;
+        });
+
+        slider.addEventListener('mouseleave', () => {
+            isDown = false;
+        });
+
+        slider.addEventListener('mouseup', () => {
+            isDown = false;
+        });
+
+        slider.addEventListener('mousemove', (e) => {
+            if (!isDown) return;
+            e.preventDefault();
+            const x = e.pageX - slider.offsetLeft;
+            const walk = (x - startX) * 2; // Vitesse du glissement
+            slider.scrollLeft = scrollLeft - walk;
+        });
+
+        // --- Reste du code météo ---
         function updateDateTime() {
             const now = new Date();
             const optionsHeure = { hour: '2-digit', minute: '2-digit' };
-            const heureString = now.toLocaleTimeString('fr-FR', optionsHeure);
             const optionsDate = { weekday: 'long', day: 'numeric', month: 'long' };
             let dateString = now.toLocaleDateString('fr-FR', optionsDate);
             dateString = dateString.charAt(0).toUpperCase() + dateString.slice(1);
-            document.getElementById('dateTime').textContent = `${dateString} • ${heureString}`;
+            document.getElementById('dateTime').textContent = `${dateString} • ${now.toLocaleTimeString('fr-FR', optionsHeure)}`;
         }
 
         updateDateTime();
@@ -305,10 +329,10 @@
         };
 
         const weatherMeta = {
-            0:  ["☀️", "Ciel dégagé", "sunny"],
-            1:  ["🌤️", "Peu nuageux", "sunny"],
-            2:  ["⛅", "Partiellement nuageux", "cloudy"],
-            3:  ["☁️", "Ciel couvert", "cloudy"],
+            0: ["☀️", "Ciel dégagé", "sunny"],
+            1: ["🌤️", "Peu nuageux", "sunny"],
+            2: ["⛅", "Partiellement nuageux", "cloudy"],
+            3: ["☁️", "Ciel couvert", "cloudy"],
             45: ["🌫️", "Brouillard", "cloudy"],
             51: ["🌦️", "Légère bruine", "rainy"],
             61: ["🌧️", "Pluie légère", "rainy"],
@@ -320,13 +344,11 @@
 
         navigator.geolocation.getCurrentPosition(async pos => {
             const { latitude, longitude } = pos.coords;
-
             try {
                 const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
                 const geoData = await geoResponse.json();
                 document.getElementById('city').textContent = geoData.address.city || geoData.address.town || "Ma Position";
 
-                // On demande aussi les rafales de vent (wind_gusts_10m)
                 const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,weathercode,wind_gusts_10m&timezone=auto`);
                 const data = await weatherResponse.json();
 
@@ -337,13 +359,8 @@
                 document.getElementById('temp').textContent = Math.round(current.temperature);
                 document.getElementById('desc').textContent = text;
 
-                // GESTION DU VENT : Seuil abaissé à 50 km/h pour être plus réactif
-                // On vérifie soit la vitesse moyenne, soit les rafales de l'heure actuelle
-                const windSpeed = current.windspeed;
                 const currentHour = new Date().getHours();
-                const windGusts = data.hourly.wind_gusts_10m[currentHour] || 0;
-                
-                const maxWind = Math.max(windSpeed, windGusts);
+                const maxWind = Math.max(current.windspeed, data.hourly.wind_gusts_10m[currentHour] || 0);
 
                 if (maxWind >= 50) {
                     document.getElementById('windAlert').style.display = 'block';
@@ -351,43 +368,29 @@
                 }
 
                 let forecastHtml = '';
-                
                 for(let i = currentHour; i < currentHour + 12; i++) {
                     const temp = Math.round(data.hourly.temperature_2m[i]);
                     const code = data.hourly.weathercode[i];
                     const [ic] = weatherMeta[code] || ["🌡️"];
-                    const time = i % 24;
-
                     forecastHtml += `
                         <div class="forecast-item">
-                            <span class="forecast-time">${time}h</span>
+                            <span class="forecast-time">${i % 24}h</span>
                             <div style="font-size: 1.5rem; margin: 5px 0;">${ic}</div>
                             <span class="forecast-temp">${temp}°</span>
                         </div>
                     `;
                 }
                 document.getElementById('forecast').innerHTML = forecastHtml;
-
                 initCanvas(type);
-
-            } catch (error) {
-                document.getElementById('city').textContent = "Erreur de connexion";
-            }
-        }, () => {
-            document.getElementById('city').textContent = "Accès refusé";
+            } catch (e) { document.getElementById('city').textContent = "Erreur"; }
         });
 
         function initCanvas(weatherType) {
             const canvas = document.getElementById('weatherCanvas');
             const ctx = canvas.getContext('2d');
             let particles = [];
-
-            function resize() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            }
-            window.onresize = resize;
-            resize();
+            function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+            window.onresize = resize; resize();
 
             class Particle {
                 constructor() {
@@ -398,33 +401,21 @@
                     this.speedX = Math.random() * 1 - 0.5;
                 }
                 update() {
-                    this.y += this.speedY;
-                    this.x += this.speedX;
-                    if (this.y > canvas.height) {
-                        this.y = -10;
-                        this.x = Math.random() * canvas.width;
-                    }
+                    this.y += this.speedY; this.x += this.speedX;
+                    if (this.y > canvas.height) { this.y = -10; this.x = Math.random() * canvas.width; }
                 }
                 draw() {
                     ctx.fillStyle = body.classList.contains('dark') ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.05)';
                     ctx.beginPath();
-                    if(weatherType === 'rainy') {
-                        ctx.rect(this.x, this.y, 1, 15);
-                    } else {
-                        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-                    }
+                    if(weatherType === 'rainy') ctx.rect(this.x, this.y, 1, 15);
+                    else ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
                     ctx.fill();
                 }
             }
-
             for(let i = 0; i < 60; i++) particles.push(new Particle());
-
             function animate() {
                 ctx.clearRect(0,0,canvas.width, canvas.height);
-                particles.forEach(p => {
-                    p.update();
-                    p.draw();
-                });
+                particles.forEach(p => { p.update(); p.draw(); });
                 requestAnimationFrame(animate);
             }
             animate();
