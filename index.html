@@ -168,39 +168,45 @@
             margin-bottom: 25px;
         }
 
-        /* 1/ BARRE DE DÉFILEMENT ÉLÉGANTE */
         .forecast-container {
             display: flex;
             gap: 15px;
             overflow-x: auto;
             padding: 10px 5px 20px 5px;
-            cursor: grab; /* Indique qu'on peut cliquer et glisser */
-            user-select: none; /* Évite de sélectionner le texte pendant le glissement */
+            cursor: grab;
+            user-select: none;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch; /* Défilement fluide sur iOS */
         }
 
-        /* Style de la barre pour Chrome, Edge, Safari */
+        /* Barre de défilement masquée par défaut (smartphones) */
         .forecast-container::-webkit-scrollbar {
-            height: 6px; /* Barre fine */
+            display: none;
         }
 
-        .forecast-container::-webkit-scrollbar-track {
-            background: rgba(0, 0, 0, 0.05);
-            border-radius: 10px;
-        }
-
-        .forecast-container::-webkit-scrollbar-thumb {
-            background: var(--scrollbar-thumb);
-            border-radius: 10px;
-        }
-
-        /* Style pour Firefox */
-        .forecast-container {
-            scrollbar-width: thin;
-            scrollbar-color: var(--scrollbar-thumb) rgba(0, 0, 0, 0.05);
+        /* Affichage de la barre UNIQUEMENT sur les appareils avec souris (PC) */
+        @media (pointer: fine) {
+            .forecast-container::-webkit-scrollbar {
+                display: block;
+                height: 6px;
+            }
+            .forecast-container::-webkit-scrollbar-track {
+                background: rgba(0, 0, 0, 0.05);
+                border-radius: 10px;
+            }
+            .forecast-container::-webkit-scrollbar-thumb {
+                background: var(--scrollbar-thumb);
+                border-radius: 10px;
+            }
+            .forecast-container {
+                scrollbar-width: thin;
+                scrollbar-color: var(--scrollbar-thumb) rgba(0, 0, 0, 0.05);
+            }
         }
 
         .forecast-container:active {
-            cursor: grabbing; /* Curseur poing fermé quand on clique */
+            cursor: grabbing;
+            scroll-behavior: auto;
         }
 
         .forecast-item {
@@ -210,8 +216,12 @@
             border-radius: 20px;
             min-width: 70px;
             text-align: center;
-            transition: 0.3s;
-            pointer-events: none; /* Permet au clic-glisser de mieux fonctionner sur le parent */
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        .forecast-item:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .forecast-time {
@@ -271,36 +281,38 @@
     </div>
 
     <script>
-        // 2/ FONCTION CLIQUER-GLISSER (DRAG-TO-SCROLL)
         const slider = document.getElementById('forecast');
         let isDown = false;
         let startX;
         let scrollLeft;
 
-        slider.addEventListener('mousedown', (e) => {
-            isDown = true;
-            slider.classList.add('active');
-            startX = e.pageX - slider.offsetLeft;
-            scrollLeft = slider.scrollLeft;
-        });
+        // On active le drag seulement si l'utilisateur a une souris
+        const hasMouse = window.matchMedia("(pointer: fine)").matches;
 
-        slider.addEventListener('mouseleave', () => {
-            isDown = false;
-        });
+        if (hasMouse) {
+            slider.addEventListener('mousedown', (e) => {
+                isDown = true;
+                startX = e.pageX - slider.offsetLeft;
+                scrollLeft = slider.scrollLeft;
+            });
 
-        slider.addEventListener('mouseup', () => {
-            isDown = false;
-        });
+            slider.addEventListener('mouseleave', () => {
+                isDown = false;
+            });
 
-        slider.addEventListener('mousemove', (e) => {
-            if (!isDown) return;
-            e.preventDefault();
-            const x = e.pageX - slider.offsetLeft;
-            const walk = (x - startX) * 2; // Vitesse du glissement
-            slider.scrollLeft = scrollLeft - walk;
-        });
+            slider.addEventListener('mouseup', () => {
+                isDown = false;
+            });
 
-        // --- Reste du code météo ---
+            slider.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - slider.offsetLeft;
+                const walk = (x - startX) * 2;
+                slider.scrollLeft = scrollLeft - walk;
+            });
+        }
+
         function updateDateTime() {
             const now = new Date();
             const optionsHeure = { hour: '2-digit', minute: '2-digit' };
