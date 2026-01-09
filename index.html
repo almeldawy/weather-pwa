@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Météo</title>
 
-    <!-- PWA & SEO -->
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#6366f1">
     <link rel="icon" type="image/png" href="icons/icon-192.png">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
 
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
 
     <style>
@@ -176,15 +174,13 @@
             cursor: grab;
             user-select: none;
             scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch; /* Défilement fluide sur iOS */
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* Barre de défilement masquée par défaut (smartphones) */
         .forecast-container::-webkit-scrollbar {
             display: none;
         }
 
-        /* Affichage de la barre UNIQUEMENT sur les appareils avec souris (PC) */
         @media (pointer: fine) {
             .forecast-container::-webkit-scrollbar {
                 display: block;
@@ -274,19 +270,25 @@
             <div class="temperature"><span id="temp">--</span>°</div>
             <p class="description" id="desc">Analyse du ciel...</p>
 
-            <div class="forecast-container" id="forecast">
-                <!-- Les heures s'afficheront ici -->
-            </div>
+            <div class="forecast-container" id="forecast"></div>
         </main>
     </div>
 
     <script>
+        // --- 1. ENREGISTREMENT SERVICE WORKER ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(reg => console.log('Service Worker enregistré !'))
+                    .catch(err => console.log('Erreur SW:', err));
+            });
+        }
+
+        // --- 2. GESTION DU SLIDER (DRAG) ---
         const slider = document.getElementById('forecast');
         let isDown = false;
         let startX;
         let scrollLeft;
-
-        // On active le drag seulement si l'utilisateur a une souris
         const hasMouse = window.matchMedia("(pointer: fine)").matches;
 
         if (hasMouse) {
@@ -295,15 +297,8 @@
                 startX = e.pageX - slider.offsetLeft;
                 scrollLeft = slider.scrollLeft;
             });
-
-            slider.addEventListener('mouseleave', () => {
-                isDown = false;
-            });
-
-            slider.addEventListener('mouseup', () => {
-                isDown = false;
-            });
-
+            slider.addEventListener('mouseleave', () => { isDown = false; });
+            slider.addEventListener('mouseup', () => { isDown = false; });
             slider.addEventListener('mousemove', (e) => {
                 if (!isDown) return;
                 e.preventDefault();
@@ -312,6 +307,8 @@
                 slider.scrollLeft = scrollLeft - walk;
             });
         }
+
+        // --- 3. FONCTIONS DE MISE À JOUR ---
 
         function updateDateTime() {
             const now = new Date();
@@ -322,9 +319,92 @@
             document.getElementById('dateTime').textContent = `${dateString} • ${now.toLocaleTimeString('fr-FR', optionsHeure)}`;
         }
 
-        updateDateTime();
-        setInterval(updateDateTime, 60000);
+        async function chargerMeteo() {
+            const weatherMeta = {
+    0:  ["☀️", "Ciel dégagé", "sunny"],
+    1:  ["🌤️", "Peu nuageux", "sunny"],
+    2:  ["⛅", "Partiellement nuageux", "cloudy"],
+    3:  ["☁️", "Ciel couvert", "cloudy"],
+    45: ["🌫️", "Brouillard", "cloudy"],
+    48: ["🌫️", "Brouillard givrant", "cloudy"],
+    51: ["🌦️", "Bruine légère", "rainy"],
+    53: ["🌦️", "Bruine modérée", "rainy"],
+    55: ["🌦️", "Bruine dense", "rainy"],
+    56: ["🌨️", "Bruine verglaçante légère", "rainy"],
+    57: ["🌨️", "Bruine verglaçante dense", "rainy"],
+    61: ["🌧️", "Pluie légère", "rainy"],
+    63: ["🌧️", "Pluie modérée", "rainy"],
+    65: ["🌧️", "Pluie forte", "rainy"],
+    66: ["🧊", "Pluie verglaçante légère", "rainy"],
+    67: ["🧊", "Pluie verglaçante forte", "rainy"],
+    71: ["❄️", "Neige légère", "snowy"],
+    73: ["❄️", "Neige modérée", "snowy"],
+    75: ["❄️", "Neige forte", "snowy"],
+    77: ["🌨️", "Grains de neige", "snowy"],
+    80: ["🚿", "Averses de pluie légères", "rainy"],
+    81: ["🚿", "Averses de pluie modérées", "rainy"],
+    82: ["🚿", "Averses de pluie violentes", "rainy"],
+    85: ["☃️", "Averses de neige légères", "snowy"],
+    86: ["☃️", "Averses de neige fortes", "snowy"],
+    95: ["⛈️", "Orage", "stormy"],
+    96: ["⚡", "Orage avec grêle légère", "stormy"],
+    99: ["⚡", "Orage avec grêle forte", "stormy"]
+};
 
+            navigator.geolocation.getCurrentPosition(async pos => {
+                const { latitude, longitude } = pos.coords;
+                try {
+                    const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+                    const geoData = await geoResponse.json();
+                    document.getElementById('city').textContent = geoData.address.city || geoData.address.town || "Ma Position";
+
+                    const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,weathercode,wind_gusts_10m&timezone=auto`);
+                    const data = await weatherResponse.json();
+
+                    const current = data.current_weather;
+                    const [icon, text, type] = weatherMeta[current.weathercode] || ["🌡️", "Inconnu", "cloudy"];
+
+                    document.getElementById('icon').textContent = icon;
+                    document.getElementById('temp').textContent = Math.round(current.temperature);
+                    document.getElementById('desc').textContent = text;
+
+                    const currentHour = new Date().getHours();
+                    const maxWind = Math.max(current.windspeed, data.hourly.wind_gusts_10m[currentHour] || 0);
+
+                    if (maxWind >= 50) {
+                        document.getElementById('windAlert').style.display = 'block';
+                        document.getElementById('windVal').textContent = Math.round(maxWind);
+                    } else {
+                        document.getElementById('windAlert').style.display = 'none';
+                    }
+
+                    let forecastHtml = '';
+                    for(let i = currentHour; i < currentHour + 12; i++) {
+                        const temp = Math.round(data.hourly.temperature_2m[i]);
+                        const code = data.hourly.weathercode[i];
+                        const [ic] = weatherMeta[code] || ["🌡️"];
+                        forecastHtml += `
+                            <div class="forecast-item">
+                                <span class="forecast-time">${i % 24}h</span>
+                                <div style="font-size: 1.5rem; margin: 5px 0;">${ic}</div>
+                                <span class="forecast-temp">${temp}°</span>
+                            </div>`;
+                    }
+                    document.getElementById('forecast').innerHTML = forecastHtml;
+                    initCanvas(type);
+                } catch (e) { document.getElementById('city').textContent = "Erreur"; }
+            });
+        }
+
+        // --- 4. INITIALISATION ET MINUTEURS ---
+
+        updateDateTime();
+        chargerMeteo();
+
+        setInterval(updateDateTime, 60000);   // Heure : 1 min
+        setInterval(chargerMeteo, 1800000);  // Météo : 30 min
+
+        // --- 5. GESTION DU THÈME ---
         const themeBtn = document.getElementById('themeBtn');
         const body = document.body;
 
@@ -340,63 +420,7 @@
             localStorage.setItem('theme', isDark ? 'dark' : 'light');
         };
 
-        const weatherMeta = {
-            0: ["☀️", "Ciel dégagé", "sunny"],
-            1: ["🌤️", "Peu nuageux", "sunny"],
-            2: ["⛅", "Partiellement nuageux", "cloudy"],
-            3: ["☁️", "Ciel couvert", "cloudy"],
-            45: ["🌫️", "Brouillard", "cloudy"],
-            51: ["🌦️", "Légère bruine", "rainy"],
-            61: ["🌧️", "Pluie légère", "rainy"],
-            63: ["🌧️", "Pluie modérée", "rainy"],
-            65: ["🌧️", "Pluie forte", "rainy"],
-            71: ["❄️", "Chutes de neige", "snowy"],
-            95: ["⛈️", "Orage", "stormy"]
-        };
-
-        navigator.geolocation.getCurrentPosition(async pos => {
-            const { latitude, longitude } = pos.coords;
-            try {
-                const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-                const geoData = await geoResponse.json();
-                document.getElementById('city').textContent = geoData.address.city || geoData.address.town || "Ma Position";
-
-                const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,weathercode,wind_gusts_10m&timezone=auto`);
-                const data = await weatherResponse.json();
-
-                const current = data.current_weather;
-                const [icon, text, type] = weatherMeta[current.weathercode] || ["🌡️", "Inconnu", "cloudy"];
-
-                document.getElementById('icon').textContent = icon;
-                document.getElementById('temp').textContent = Math.round(current.temperature);
-                document.getElementById('desc').textContent = text;
-
-                const currentHour = new Date().getHours();
-                const maxWind = Math.max(current.windspeed, data.hourly.wind_gusts_10m[currentHour] || 0);
-
-                if (maxWind >= 50) {
-                    document.getElementById('windAlert').style.display = 'block';
-                    document.getElementById('windVal').textContent = Math.round(maxWind);
-                }
-
-                let forecastHtml = '';
-                for(let i = currentHour; i < currentHour + 12; i++) {
-                    const temp = Math.round(data.hourly.temperature_2m[i]);
-                    const code = data.hourly.weathercode[i];
-                    const [ic] = weatherMeta[code] || ["🌡️"];
-                    forecastHtml += `
-                        <div class="forecast-item">
-                            <span class="forecast-time">${i % 24}h</span>
-                            <div style="font-size: 1.5rem; margin: 5px 0;">${ic}</div>
-                            <span class="forecast-temp">${temp}°</span>
-                        </div>
-                    `;
-                }
-                document.getElementById('forecast').innerHTML = forecastHtml;
-                initCanvas(type);
-            } catch (e) { document.getElementById('city').textContent = "Erreur"; }
-        });
-
+        // --- 6. ANIMATION CANVAS ---
         function initCanvas(weatherType) {
             const canvas = document.getElementById('weatherCanvas');
             const ctx = canvas.getContext('2d');
@@ -424,6 +448,7 @@
                     ctx.fill();
                 }
             }
+            particles = [];
             for(let i = 0; i < 60; i++) particles.push(new Particle());
             function animate() {
                 ctx.clearRect(0,0,canvas.width, canvas.height);
