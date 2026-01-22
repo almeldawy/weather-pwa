@@ -53,6 +53,61 @@
             overflow-x: hidden;
         }
 
+        /* --- STYLE DU MODAL (Fenêtre surgissante) --- */
+        #geoModal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: 30px;
+            border-radius: 24px;
+            text-align: center;
+            box-shadow: var(--shadow);
+            max-width: 320px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            margin-bottom: 15px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .modal-content p {
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .btn-allow {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.3s;
+            width: 100%;
+        }
+
+        .btn-allow:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+
         #weatherCanvas {
             position: fixed;
             top: 0;
@@ -248,12 +303,21 @@
 </head>
 <body>
 
+    <!-- MODAL POUR LA GEOLOCALISATION -->
+    <div id="geoModal">
+        <div class="modal-content">
+            <h2>Météo Locale</h2>
+            <p>Pour afficher la météo de votre ville, nous avons besoin d'accéder à votre position.</p>
+            <button class="btn-allow" id="allowBtn">Autoriser l'accès</button>
+        </div>
+    </div>
+
     <canvas id="weatherCanvas"></canvas>
 
     <div class="app-container">
         <header>
             <div>
-                <h1 id="city">Chargement...</h1>
+                <h1 id="city">Attente...</h1>
                 <div class="date-time" id="dateTime">-- : --</div>
             </div>
             <button class="theme-toggle" id="themeBtn">🌙</button>
@@ -268,7 +332,7 @@
 
             <div class="weather-icon" id="icon">⛅</div>
             <div class="temperature"><span id="temp">--</span>°</div>
-            <p class="description" id="desc">Analyse du ciel...</p>
+            <p class="description" id="desc">En attente de position...</p>
 
             <div class="forecast-container" id="forecast"></div>
         </main>
@@ -321,38 +385,41 @@
 
         async function chargerMeteo() {
             const weatherMeta = {
-    0:  ["☀️", "Ciel dégagé", "sunny"],
-    1:  ["🌤️", "Peu nuageux", "sunny"],
-    2:  ["⛅", "Partiellement nuageux", "cloudy"],
-    3:  ["☁️", "Ciel couvert", "cloudy"],
-    45: ["🌫️", "Brouillard", "cloudy"],
-    48: ["🌫️", "Brouillard givrant", "cloudy"],
-    51: ["🌦️", "Bruine légère", "rainy"],
-    53: ["🌦️", "Bruine modérée", "rainy"],
-    55: ["🌦️", "Bruine dense", "rainy"],
-    56: ["🌨️", "Bruine verglaçante légère", "rainy"],
-    57: ["🌨️", "Bruine verglaçante dense", "rainy"],
-    61: ["🌧️", "Pluie légère", "rainy"],
-    63: ["🌧️", "Pluie modérée", "rainy"],
-    65: ["🌧️", "Pluie forte", "rainy"],
-    66: ["🧊", "Pluie verglaçante légère", "rainy"],
-    67: ["🧊", "Pluie verglaçante forte", "rainy"],
-    71: ["❄️", "Neige légère", "snowy"],
-    73: ["❄️", "Neige modérée", "snowy"],
-    75: ["❄️", "Neige forte", "snowy"],
-    77: ["🌨️", "Grains de neige", "snowy"],
-    80: ["🚿", "Averses de pluie légères", "rainy"],
-    81: ["🚿", "Averses de pluie modérées", "rainy"],
-    82: ["🚿", "Averses de pluie violentes", "rainy"],
-    85: ["☃️", "Averses de neige légères", "snowy"],
-    86: ["☃️", "Averses de neige fortes", "snowy"],
-    95: ["⛈️", "Orage", "stormy"],
-    96: ["⚡", "Orage avec grêle légère", "stormy"],
-    99: ["⚡", "Orage avec grêle forte", "stormy"]
-};
+                0:  ["☀️", "Ciel dégagé", "sunny"],
+                1:  ["🌤️", "Peu nuageux", "sunny"],
+                2:  ["⛅", "Partiellement nuageux", "cloudy"],
+                3:  ["☁️", "Ciel couvert", "cloudy"],
+                45: ["🌫️", "Brouillard", "cloudy"],
+                48: ["🌫️", "Brouillard givrant", "cloudy"],
+                51: ["🌦️", "Bruine légère", "rainy"],
+                53: ["🌦️", "Bruine modérée", "rainy"],
+                55: ["🌦️", "Bruine dense", "rainy"],
+                56: ["🌨️", "Bruine verglaçante légère", "rainy"],
+                57: ["🌨️", "Bruine verglaçante dense", "rainy"],
+                61: ["🌧️", "Pluie légère", "rainy"],
+                63: ["🌧️", "Pluie modérée", "rainy"],
+                65: ["🌧️", "Pluie forte", "rainy"],
+                66: ["🧊", "Pluie verglaçante légère", "rainy"],
+                67: ["🧊", "Pluie verglaçante forte", "rainy"],
+                71: ["❄️", "Neige légère", "snowy"],
+                73: ["❄️", "Neige modérée", "snowy"],
+                75: ["❄️", "Neige forte", "snowy"],
+                77: ["🌨️", "Grains de neige", "snowy"],
+                80: ["🚿", "Averses de pluie légères", "rainy"],
+                81: ["🚿", "Averses de pluie modérées", "rainy"],
+                82: ["🚿", "Averses de pluie violentes", "rainy"],
+                85: ["☃️", "Averses de neige légères", "snowy"],
+                86: ["☃️", "Averses de neige fortes", "snowy"],
+                95: ["⛈️", "Orage", "stormy"],
+                96: ["⚡", "Orage avec grêle légère", "stormy"],
+                99: ["⚡", "Orage avec grêle forte", "stormy"]
+            };
 
             navigator.geolocation.getCurrentPosition(async pos => {
                 const { latitude, longitude } = pos.coords;
+                // On cache le modal une fois qu'on a la position
+                document.getElementById('geoModal').style.display = 'none';
+
                 try {
                     const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
                     const geoData = await geoResponse.json();
@@ -393,16 +460,27 @@
                     document.getElementById('forecast').innerHTML = forecastHtml;
                     initCanvas(type);
                 } catch (e) { document.getElementById('city').textContent = "Erreur"; }
+            }, err => {
+                document.getElementById('desc').textContent = "Accès refusé ou erreur.";
             });
         }
 
-        // --- 4. INITIALISATION ET MINUTEURS ---
+        // --- 4. INITIALISATION ET GESTION DU BOUTON MODAL ---
 
         updateDateTime();
-        chargerMeteo();
-
         setInterval(updateDateTime, 60000);   // Heure : 1 min
-        setInterval(chargerMeteo, 1800000);  // Météo : 30 min
+
+        // Au lieu de lancer chargerMeteo() tout de suite, on attend le clic sur le bouton
+        document.getElementById('allowBtn').addEventListener('click', () => {
+            chargerMeteo();
+        });
+
+        // Mise à jour automatique toutes les 30 min (si autorisé)
+        setInterval(() => {
+            if(document.getElementById('geoModal').style.display === 'none') {
+                chargerMeteo();
+            }
+        }, 1800000);
 
         // --- 5. GESTION DU THÈME ---
         const themeBtn = document.getElementById('themeBtn');
