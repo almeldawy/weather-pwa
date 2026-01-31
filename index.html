@@ -116,7 +116,25 @@
             padding: 30px 20px;
             text-align: center;
             box-shadow: var(--shadow);
+            position: relative;
         }
+
+        /* --- ÉLÉMENT PREMIUM LOCALISATION --- */
+        #locBtn {
+            display: none;
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            transition: transform 0.2s;
+        }
+        #locBtn:active { transform: scale(0.95); }
 
         .wind-alert {
             display: none;
@@ -260,6 +278,9 @@
         </header>
 
         <main class="main-card">
+            <!-- Bouton Premium de localisation -->
+            <button id="locBtn" onclick="chargerMeteo()">📍 Activer la localisation</button>
+            <br>
             <span class="badge">Aujourd'hui</span>
             
             <div id="windAlert" class="wind-alert">
@@ -321,42 +342,48 @@
 
         async function chargerMeteo() {
             const weatherMeta = {
-    0:  ["☀️", "Ciel dégagé", "sunny"],
-    1:  ["🌤️", "Peu nuageux", "sunny"],
-    2:  ["⛅", "Partiellement nuageux", "cloudy"],
-    3:  ["☁️", "Ciel couvert", "cloudy"],
-    45: ["🌫️", "Brouillard", "cloudy"],
-    48: ["🌫️", "Brouillard givrant", "cloudy"],
-    51: ["🌦️", "Bruine légère", "rainy"],
-    53: ["🌦️", "Bruine modérée", "rainy"],
-    55: ["🌦️", "Bruine dense", "rainy"],
-    56: ["🌨️", "Bruine verglaçante légère", "rainy"],
-    57: ["🌨️", "Bruine verglaçante dense", "rainy"],
-    61: ["🌧️", "Pluie légère", "rainy"],
-    63: ["🌧️", "Pluie modérée", "rainy"],
-    65: ["🌧️", "Pluie forte", "rainy"],
-    66: ["🧊", "Pluie verglaçante légère", "rainy"],
-    67: ["🧊", "Pluie verglaçante forte", "rainy"],
-    71: ["❄️", "Neige légère", "snowy"],
-    73: ["❄️", "Neige modérée", "snowy"],
-    75: ["❄️", "Neige forte", "snowy"],
-    77: ["🌨️", "Grains de neige", "snowy"],
-    80: ["🚿", "Averses de pluie légères", "rainy"],
-    81: ["🚿", "Averses de pluie modérées", "rainy"],
-    82: ["🚿", "Averses de pluie violentes", "rainy"],
-    85: ["☃️", "Averses de neige légères", "snowy"],
-    86: ["☃️", "Averses de neige fortes", "snowy"],
-    95: ["⛈️", "Orage", "stormy"],
-    96: ["⚡", "Orage avec grêle légère", "stormy"],
-    99: ["⚡", "Orage avec grêle forte", "stormy"]
-};
+                0:  ["☀️", "Ciel dégagé", "sunny"],
+                1:  ["🌤️", "Peu nuageux", "sunny"],
+                2:  ["⛅", "Partiellement nuageux", "cloudy"],
+                3:  ["☁️", "Ciel couvert", "cloudy"],
+                45: ["🌫️", "Brouillard", "cloudy"],
+                48: ["🌫️", "Brouillard givrant", "cloudy"],
+                51: ["🌦️", "Bruine légère", "rainy"],
+                53: ["🌦️", "Bruine modérée", "rainy"],
+                55: ["🌦️", "Bruine dense", "rainy"],
+                56: ["🌨️", "Bruine verglaçante légère", "rainy"],
+                57: ["🌨️", "Bruine verglaçante dense", "rainy"],
+                61: ["🌧️", "Pluie légère", "rainy"],
+                63: ["🌧️", "Pluie modérée", "rainy"],
+                65: ["🌧️", "Pluie forte", "rainy"],
+                66: ["🧊", "Pluie verglaçante légère", "rainy"],
+                67: ["🧊", "Pluie verglaçante forte", "rainy"],
+                71: ["❄️", "Neige légère", "snowy"],
+                73: ["❄️", "Neige modérée", "snowy"],
+                75: ["❄️", "Neige forte", "snowy"],
+                77: ["🌨️", "Grains de neige", "snowy"],
+                80: ["🚿", "Averses de pluie légères", "rainy"],
+                81: ["🚿", "Averses de pluie modérées", "rainy"],
+                82: ["🚿", "Averses de pluie violentes", "rainy"],
+                85: ["☃️", "Averses de neige légères", "snowy"],
+                86: ["☃️", "Averses de neige fortes", "snowy"],
+                95: ["⛈️", "Orage", "stormy"],
+                96: ["⚡", "Orage avec grêle légère", "stormy"],
+                99: ["⚡", "Orage avec grêle forte", "stormy"]
+            };
+
+            const locBtn = document.getElementById('locBtn');
+            const cityEl = document.getElementById('city');
 
             navigator.geolocation.getCurrentPosition(async pos => {
+                // Succès : On cache le bouton premium s'il était là
+                locBtn.style.display = 'none';
+                
                 const { latitude, longitude } = pos.coords;
                 try {
                     const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
                     const geoData = await geoResponse.json();
-                    document.getElementById('city').textContent = geoData.address.city || geoData.address.town || "Ma Position";
+                    cityEl.textContent = geoData.address.city || geoData.address.town || "Ma Position";
 
                     const weatherResponse = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&hourly=temperature_2m,weathercode,wind_gusts_10m&timezone=auto`);
                     const data = await weatherResponse.json();
@@ -392,7 +419,11 @@
                     }
                     document.getElementById('forecast').innerHTML = forecastHtml;
                     initCanvas(type);
-                } catch (e) { document.getElementById('city').textContent = "Erreur"; }
+                } catch (e) { cityEl.textContent = "Erreur de connexion"; }
+            }, err => {
+                // Erreur ou Refus : On affiche le bouton premium
+                cityEl.textContent = "Position refusée";
+                locBtn.style.display = 'inline-block';
             });
         }
 
